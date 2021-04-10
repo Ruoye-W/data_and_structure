@@ -3,4 +3,4 @@ project(data_and_structure)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(data_and_structure main.cpp vector.h list.h)
+add_executable(data_and_structure main.cpp vector.h list.h BinarySearchTree.h)

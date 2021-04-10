@@ -6,6 +6,8 @@
 #ifndef DATA_AND_STRUCTURE_LIST_H
 #define DATA_AND_STRUCTURE_LIST_H
 
+#include <exception>
+
 template <typename T>
 class List {
 private:
@@ -40,17 +42,25 @@ public:
         bool operator!= (const const_iterator& rhs) const { return !(*this == rhs); }
 
     protected:
+        const List<T>* m_List;
         Node* cur;
         T& retrieve() const { return cur->data; }
 
-        const_iterator(Node* p): cur(p) {}
+        //const_iterator(Node* p): cur(p) {}
+
+        const_iterator(const List<T>* lst ,Node* p) : m_List(lst), cur(p) {}
+
+        void assertIsValid() const {
+            if(m_List == nullptr || cur==nullptr || cur == m_List->head)
+                throw IteratorOutOfBoundsException();
+        }
 
         friend class List<T>;
     };
 
     class iterator :public const_iterator{
     public:
-        iterator() {}
+        iterator() = default;
 
         T& operator* () { return this->retrieve(); }
 
@@ -68,7 +78,8 @@ public:
         }
 
     protected:
-        iterator(Node* p):const_iterator(p) {}
+
+        iterator(List<T>* lst, Node* p):const_iterator(lst, p) {}
 
         friend class List<T>;
     };
@@ -99,6 +110,10 @@ public:
     }
 
     iterator insert(iterator itr, const T& data){
+        itr.assertIsValid();
+        if(itr.m_List != this){
+            throw IteratorMismatchException();
+        }
         Node* p = itr.cur;
         m_size++;
         /*
@@ -106,7 +121,7 @@ public:
          * p->prev->next = newNode;
          * p->prev = newNode;
          * */
-        return iterator( p->prev = p->prev->next = new Node(data, data->prev, p) );
+        return iterator( this, p->prev = p->prev->next = new Node(data, data->prev, p) );
     }
 
     iterator erase(iterator itr){
@@ -152,13 +167,21 @@ public:
 
     void pop_back() { erase(--end()); }
 
-    iterator begin() { return iterator(head->next); }
+    iterator find(iterator start, iterator end, const T& object) {
+        for(iterator itr = start; itr!=end; ++itr){
+            if(itr.retrieve() == object)
+                return itr;
+        }
+        return end();
+    }
 
-    const_iterator begin() const { return const_iterator(head->next); }
+    iterator begin() { return iterator(this, head->next); }
 
-    iterator end() { return iterator(tail); }
+    const_iterator begin() const { return const_iterator(this, head->next); }
 
-    const_iterator end() const { return const_iterator(tail); }
+    iterator end() { return iterator(this, tail); }
+
+    const_iterator end() const { return const_iterator(this, tail); }
 
 private:
     int m_size;
@@ -171,6 +194,18 @@ private:
         head->next = tail;
         tail->prev = head;
     }
+
+    struct IteratorOutOfBoundsException : public std::exception {
+        const char* what() const throw () {
+            return "IteratorOutOfBoundsException";
+        }
+    };
+
+    struct IteratorMismatchException : public std::exception {
+        const char* what() const throw () {
+            return "IteratorMismatchException";
+        }
+    };
 };
 
 
